@@ -2,6 +2,15 @@ require "src/player"
 require "src/mapa"
 require "src/camera"
 
+
+function love.keypressed(key)
+  Player.keypressed(key)
+end
+
+function love.gamepadpressed(joystick, button)
+  Player.gamepadpressed(button)
+end
+
 function love.load()
   Mapa.load()
   Player.load() 
