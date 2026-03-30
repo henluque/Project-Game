@@ -22,6 +22,53 @@ local function carrega_sheet(caminho, num_frames)
   return img, quads, slot, h
 end
 
+function Player.tomarDano(direcao_inimigo)
+  if not Player.pode_tomar_dano or not Player.vivo then return end
+
+  Player.vida = Player.vida - 10
+  Player.pode_tomar_dano = false
+  Player.tempo_dano = 0
+
+  if Player.vida <= 0 then
+    Player.estado = "death"
+    Player.frame_atual = 1
+    Player.tempo_animacao = 0
+    Player.vivo = false
+  else
+    Player.estado = "hit"
+    Player.frame_atual = 1
+    Player.tempo_animacao = 0
+
+    -- knockback
+    Player.y_velocidade = -200
+    Player.x = Player.x + (direcao_inimigo * 20)
+  end
+end
+
+function Player.getHitboxAtaque()
+    if Player.combo_passo == 0 then return nil end
+
+    local alcance = 40
+    local largura = 120
+    local altura = Player.altura
+
+    if Player.direcao == 1 then
+      return {
+        x = Player.x + Player.largura,
+        y = Player.y,
+        largura = largura,
+        altura = altura
+      }
+    else
+      return {
+        x = Player.x - largura,
+        y = Player.y,
+        largura = largura,
+        altura = altura
+      }
+    end
+  end
+
 function Player.load()
   Player.nome = "Boris"
   Player.vida = 100
@@ -37,6 +84,12 @@ function Player.load()
   Player.largura = 32
   Player.altura = 64
   
+  Player.vivo = true
+
+  Player.pode_tomar_dano = true
+  Player.tempo_dano = 0
+  Player.cooldown_dano = 0.6
+  
   -- SPRITES --
   Player.sprite_idle, Player.quads_idle, Player.frame_w_idle, Player.frame_h_idle = carrega_sheet("assets/sprites/Idle.png", 10)
   
@@ -51,6 +104,10 @@ function Player.load()
   Player.sprite_ataque2, Player.quads_ataque2, Player.frame_w_ataque2, Player.frame_h_ataque2 = carrega_sheet("assets/sprites/Attack2.png", 4)
   
   Player.sprite_ataque3, Player.quads_ataque3, Player.frame_w_ataque3, Player.frame_h_ataque3 = carrega_sheet("assets/sprites/Attack3.png", 5)
+  
+  Player.sprite_hit, Player.quads_hit, Player.frame_w_hit, Player.frame_h_hit = carrega_sheet("assets/sprites/Get Hit.png", 3)
+  
+  Player.sprite_death, Player.quads_death, Player.frame_w_death, Player.frame_h_death = carrega_sheet("assets/sprites/Death.png", 9)
   
   Player.vel_anim = {
     parado = 0.08,
@@ -102,9 +159,24 @@ function Player.gamepadpressed(button)
 end
 
 function Player.update(dt, plataformas)
+  if not Player.vivo then
+    Player.estado = "death"
+  end
+  
+  local travado = (Player.estado == "hit" or Player.estado == "death")
+  
   local atacando = (Player.combo_passo > 0)
   local mov_dir    = 0
   local botao_pulo = (love.keyboard.isDown("up") or love.keyboard.isDown("w"))
+  
+  -- cooldown de dano
+  if not Player.pode_tomar_dano then
+    Player.tempo_dano = Player.tempo_dano + dt
+    if Player.tempo_dano >= Player.cooldown_dano then
+      Player.pode_tomar_dano = true
+      Player.tempo_dano = 0
+    end
+  end
 
   local pad = love.joystick.getJoysticks()[1]
 
@@ -121,10 +193,12 @@ function Player.update(dt, plataformas)
     if pad:isGamepadDown("a") then botao_pulo = true end
   end
 
-  if not atacando or not Player.no_chao then
-    if mov_dir ~= 0 then
-      Player.x = Player.x + (Player.velocidade_mov * mov_dir * dt)
-      Player.direcao = mov_dir
+  if not travado then
+    if not atacando or not Player.no_chao then
+      if mov_dir ~= 0 then
+        Player.x = Player.x + (Player.velocidade_mov * mov_dir * dt)
+        Player.direcao = mov_dir
+      end
     end
   end
   
@@ -145,11 +219,11 @@ function Player.update(dt, plataformas)
     end
   end
 
-  if botao_pulo and Player.no_chao then
+  if botao_pulo and Player.no_chao and not travado then
     Player.y_velocidade = Player.forca_pulo
   end
 
-  if atacando then
+  if atacando and Player.estado ~= "hit" and Player.estado ~= "death" then
     local vel = Player.vel_anim[Player.estado] or 0.10
     Player.tempo_animacao = Player.tempo_animacao + dt
     
@@ -183,19 +257,23 @@ function Player.update(dt, plataformas)
     Player.estado_anterior = Player.estado
     return
   end
+
+  local novo_estado = Player.estado
   
-  local novo_estado = "parado"
-  if not Player.no_chao then
-    if Player.y_velocidade < 0 then
-      novo_estado = "pulando"
+  if Player.estado ~= "hit" and Player.estado ~= "death" then
+    if not Player.no_chao then
+      if Player.y_velocidade < 0 then
+        novo_estado = "pulando"
+      else
+        novo_estado = "caindo"
+      end
+    elseif mov_dir ~= 0 then
+      novo_estado = "correndo"
     else
-      novo_estado = "caindo"
+      novo_estado = "parado"
     end
-  elseif mov_dir ~= 0 then
-    novo_estado = "correndo"
-  else
-    novo_estado = "parado"
   end
+  
   
   if novo_estado ~= Player.estado then
     Player.frame_atual = 1
@@ -216,19 +294,36 @@ function Player.update(dt, plataformas)
     parado = #Player.quads_idle,
     correndo = #Player.quads_run,
     pulando = #Player.quads_jump,
-    caindo = #Player.quads_fall
+    caindo = #Player.quads_fall,
+    hit = #Player.quads_hit,
+    death = #Player.quads_death
   }
+  
   local limite = limites[Player.estado] or #Player.quads_idle
   
-  if Player.estado == "pulando" or Player.estado == "caindo" then 
-    if Player.frame_atual > limite then 
+  --if Player.estado == "pulando" or Player.estado == "caindo" then 
+    --if Player.frame_atual > limite then 
+      --Player.frame_atual = limite
+    --end 
+  --else
+    --if Player.frame_atual > limite then
+      --Player.frame_atual = 1
+    --end
+  --end
+  
+  if Player.frame_atual > limite then
+    if Player.estado == "hit" then
+      Player.estado = "parado"
+      Player.frame_atual = 1
+
+    elseif Player.estado == "death" then
       Player.frame_atual = limite
-    end 
-  else
-    if Player.frame_atual > limite then
+
+    else
       Player.frame_atual = 1
     end
   end
+  
 end
 
 function Player.draw()
@@ -243,7 +338,9 @@ function Player.draw()
     caindo   = { Player.sprite_fall, Player.quads_fall, Player.frame_w_fall, Player.frame_h_fall },
     ataque1  = { Player.sprite_ataque1, Player.quads_ataque1, Player.frame_w_ataque1, Player.frame_h_ataque1 },
     ataque2  = { Player.sprite_ataque2, Player.quads_ataque2, Player.frame_w_ataque2, Player.frame_h_ataque2 },
-    ataque3  = { Player.sprite_ataque3, Player.quads_ataque3, Player.frame_w_ataque3, Player.frame_h_ataque3 }
+    ataque3  = { Player.sprite_ataque3, Player.quads_ataque3, Player.frame_w_ataque3, Player.frame_h_ataque3 },
+    hit     = { Player.sprite_hit, Player.quads_hit, Player.frame_w_hit, Player.frame_h_hit },
+    death   = { Player.sprite_death, Player.quads_death, Player.frame_w_death, Player.frame_h_death }
   }
 
   local d = info[Player.estado] or info["parado"]
