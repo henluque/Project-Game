@@ -16,6 +16,9 @@ function love.load()
   Mapa.load()
   Player.load() 
   Enemy.load()
+  
+  fundo = love.graphics.newImage("assets/background/Fundo_1.png")
+  escala_fundo = love.graphics.getHeight() / fundo:getHeight()
 end
 
 function love.update(dt)
@@ -26,7 +29,10 @@ end
 
 function love.draw()
   love.graphics.clear(0.1, 0.1, 0.2) 
+  love.graphics.setColor(1, 1, 1)
   
+  love.graphics.draw(fundo, 0, 0, 0, escala_fundo, escala_fundo)
+
   Camera.set()
     Mapa.draw()
     Player.draw()
