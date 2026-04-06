@@ -66,19 +66,19 @@ function Enemy.load()
 
   -- SPRITES
   Enemy.sprite_idle, Enemy.quads_idle, Enemy.frame_w, Enemy.frame_h =
-    carrega_sheet("assets/sprites/Goblin/idle.png", 4)
+    carrega_sheet("assets/sprites/goblin/Idle.png", 4)
 
   Enemy.sprite_run, Enemy.quads_run, Enemy.frame_w_r, Enemy.frame_h_r =
-    carrega_sheet("assets/sprites/Goblin/Run.png", 8)
+    carrega_sheet("assets/sprites/goblin/Run.png", 8)
 
   Enemy.sprite_attack, Enemy.quads_attack, Enemy.frame_w_a, Enemy.frame_h_a =
-    carrega_sheet("assets/sprites/Goblin/attack.png", 8)
+    carrega_sheet("assets/sprites/goblin/Attack.png", 8)
 
   Enemy.sprite_hit, Enemy.quads_hit, Enemy.frame_w_h, Enemy.frame_h_h =
-    carrega_sheet("assets/sprites/Goblin/Take Hit.png", 4)
+    carrega_sheet("assets/sprites/goblin/Take_hit.png", 4)
 
   Enemy.sprite_death, Enemy.quads_death, Enemy.frame_w_d, Enemy.frame_h_d =
-    carrega_sheet("assets/sprites/Goblin/Death.png", 4)
+    carrega_sheet("assets/sprites/goblin/Death.png", 4)
 
   Enemy.frame_atual = 1
   Enemy.tempo_animacao = 0

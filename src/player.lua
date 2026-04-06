@@ -3,7 +3,7 @@ Player = {}
 local function carrega_sheet(caminho, num_frames)
   local img = love.graphics.newImage(caminho)
   local w = img:getWidth()
-  local h =  img:getHeight()
+  local h = img:getHeight()
   local slot = w / num_frames
   local quads = {}
   for i = 0, num_frames - 1 do
@@ -91,23 +91,23 @@ function Player.load()
   Player.cooldown_dano = 0.6
   
   -- SPRITES --
-  Player.sprite_idle, Player.quads_idle, Player.frame_w_idle, Player.frame_h_idle = carrega_sheet("assets/sprites/Idle.png", 10)
+  Player.sprite_idle, Player.quads_idle, Player.frame_w_idle, Player.frame_h_idle = carrega_sheet("assets/sprites/player/Idle.png", 10)
   
-  Player.sprite_run, Player.quads_run, Player.frame_w_run, Player.frame_h_run = carrega_sheet("assets/sprites/Run.png", 6)
+  Player.sprite_run, Player.quads_run, Player.frame_w_run, Player.frame_h_run = carrega_sheet("assets/sprites/player/Run.png", 6)
   
-  Player.sprite_jump, Player.quads_jump, Player.frame_w_jump, Player.frame_h_jump = carrega_sheet("assets/sprites/Jump.png", 2)
+  Player.sprite_jump, Player.quads_jump, Player.frame_w_jump, Player.frame_h_jump = carrega_sheet("assets/sprites/player/Jump.png", 2)
   
-  Player.sprite_fall, Player.quads_fall, Player.frame_w_fall, Player.frame_h_fall = carrega_sheet("assets/sprites/Fall.png" ,2)
+  Player.sprite_fall, Player.quads_fall, Player.frame_w_fall, Player.frame_h_fall = carrega_sheet("assets/sprites/player/Fall.png" ,2)
   
-  Player.sprite_ataque1, Player.quads_ataque1, Player.frame_w_ataque1, Player.frame_h_ataque1 = carrega_sheet("assets/sprites/Attack1.png", 4)
+  Player.sprite_ataque1, Player.quads_ataque1, Player.frame_w_ataque1, Player.frame_h_ataque1 = carrega_sheet("assets/sprites/player/Attack1.png", 4)
   
-  Player.sprite_ataque2, Player.quads_ataque2, Player.frame_w_ataque2, Player.frame_h_ataque2 = carrega_sheet("assets/sprites/Attack2.png", 4)
+  Player.sprite_ataque2, Player.quads_ataque2, Player.frame_w_ataque2, Player.frame_h_ataque2 = carrega_sheet("assets/sprites/player/Attack2.png", 4)
   
-  Player.sprite_ataque3, Player.quads_ataque3, Player.frame_w_ataque3, Player.frame_h_ataque3 = carrega_sheet("assets/sprites/Attack3.png", 5)
+  Player.sprite_ataque3, Player.quads_ataque3, Player.frame_w_ataque3, Player.frame_h_ataque3 = carrega_sheet("assets/sprites/player/Attack3.png", 5)
   
-  Player.sprite_hit, Player.quads_hit, Player.frame_w_hit, Player.frame_h_hit = carrega_sheet("assets/sprites/Get Hit.png", 3)
+  Player.sprite_hit, Player.quads_hit, Player.frame_w_hit, Player.frame_h_hit = carrega_sheet("assets/sprites/player/Get_hit.png", 3)
   
-  Player.sprite_death, Player.quads_death, Player.frame_w_death, Player.frame_h_death = carrega_sheet("assets/sprites/Death.png", 9)
+  Player.sprite_death, Player.quads_death, Player.frame_w_death, Player.frame_h_death = carrega_sheet("assets/sprites/player/Death.png", 9)
   
   Player.vel_anim = {
     parado = 0.08,
