@@ -46,27 +46,28 @@ function Player.tomarDano(direcao_inimigo, dano)
 end
 
 function Player.getHitboxAtaque()
-  if Player.combo_passo == 0 then return nil end
+    if Player.combo_passo == 0 then return nil end
 
-  local largura = 120
-  local altura = Player.altura  -- 64px, altura lógica correta
+    local alcance = 40
+    local largura = 120
+    local altura = Player.altura
 
-  if Player.direcao == 1 then
-    return {
-      x = Player.x + Player.largura,
-      y = Player.y,          -- de volta ao original
-      largura = largura,
-      altura = altura
-    }
-  else
-    return {
-      x = Player.x - largura,
-      y = Player.y,          -- de volta ao original
-      largura = largura,
-      altura = altura
-    }
+    if Player.direcao == 1 then
+      return {
+        x = Player.x + Player.largura,
+        y = Player.y,
+        largura = largura,
+        altura = altura
+      }
+    else
+      return {
+        x = Player.x - largura,
+        y = Player.y,
+        largura = largura,
+        altura = altura
+      }
+    end
   end
-end
 
 function Player.load()
   Player.nome = "Boris"
@@ -328,13 +329,6 @@ end
 function Player.draw()
   love.graphics.setColor(1, 0, 0, 0.4)
   love.graphics.rectangle("fill", Player.x, Player.y, Player.largura, Player.altura)
-  -- debug: mostra a hitbox de ataque em amarelo
-  local hb = Player.getHitboxAtaque()
-  if hb then
-    love.graphics.setColor(1, 1, 0, 0.5)
-    love.graphics.rectangle("fill", hb.x, hb.y, hb.largura, hb.altura)
-    love.graphics.setColor(1, 1, 1)
-  end
   love.graphics.setColor(1, 1, 1)
 
   local info = {

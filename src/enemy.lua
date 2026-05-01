@@ -61,8 +61,14 @@ function Enemy.load()
   Enemy.pode_tomar_dano = true
   Enemy.tempo_dano = 0
   Enemy.cooldown_dano = 0.5
+  Enemy.frame_dano = 8 -- ajuste conforme a animação
+  Enemy.dano_aplicado = false
 
   Enemy.estado = "idle"
+  
+  Enemy.pode_atacar = true
+  Enemy.tempo_ataque = 0
+  Enemy.cooldown_ataque = 1 
 
   -- SPRITES
   Enemy.sprite_idle, Enemy.quads_idle, Enemy.frame_w, Enemy.frame_h =
@@ -100,6 +106,11 @@ function Enemy.load()
 end
 
 function Enemy.update(dt, player, plataformas)
+  
+  if not player.vivo then
+    Enemy.estado = "idle"
+    return
+  end
 
   local hitbox = player.getHitboxAtaque and player.getHitboxAtaque()
 
@@ -108,6 +119,15 @@ function Enemy.update(dt, player, plataformas)
     if Enemy.tempo_dano >= Enemy.cooldown_dano then
       Enemy.pode_tomar_dano = true
       Enemy.tempo_dano = 0
+    end
+  end
+  
+  -- cooldown de ataque
+  if not Enemy.pode_atacar then
+    Enemy.tempo_ataque = Enemy.tempo_ataque + dt
+    if Enemy.tempo_ataque >= Enemy.cooldown_ataque then
+      Enemy.pode_atacar = true
+      Enemy.tempo_ataque = 0
     end
   end
 
@@ -143,7 +163,12 @@ function Enemy.update(dt, player, plataformas)
     local alinhado_vertical = dist_y < 40
 
     if dist_x < Enemy.dist_ataque and alinhado_vertical then
-      Enemy.estado = "attack"
+      if Enemy.estado ~= "attack" then
+        Enemy.estado = "attack"
+        Enemy.frame_atual = 1
+        Enemy.tempo_animacao = 0
+        Enemy.dano_aplicado = false
+      end
 
     elseif dist_x < Enemy.raio_visao then
       if alinhado_vertical then
@@ -213,12 +238,16 @@ function Enemy.update(dt, player, plataformas)
     end
   end
   
-  if Enemy.estado == "attack" and Enemy.vivo then
-    local hitbox = Enemy.getHitboxAtaque()
-    if colide(player, hitbox) then
-      player.tomarDano(Enemy.direcao)
+  if Enemy.estado == "attack" and Enemy.vivo and player.vivo then
+    if Enemy.frame_atual == Enemy.frame_dano and not Enemy.dano_aplicado then
+      local hitbox = Enemy.getHitboxAtaque()
+      if colide(player, hitbox) then
+        player.tomarDano(Enemy.direcao, 10)
+      end
+      Enemy.dano_aplicado = true
     end
   end
+  Enemy.dano_aplicado = false
   
 end
 

@@ -2,6 +2,7 @@ require "src/player"
 require "src/mapa"
 require "src/camera"
 require "src/enemy"
+require "src/helga"
 
 
 function love.keypressed(key)
@@ -16,6 +17,7 @@ function love.load()
   Mapa.load()
   Player.load() 
   Enemy.load()
+  Helga.load()
   
   fundo = love.graphics.newImage("assets/background/Fundo_1.png")
   escala_fundo = love.graphics.getHeight() / fundo:getHeight()
@@ -25,6 +27,7 @@ function love.update(dt)
   Player.update(dt, Mapa.plataformas) 
   Camera.update(Player.x, Player.y)
   Enemy.update(dt, Player, Mapa.plataformas)
+  Helga.update(dt, Player)
 end
 
 function love.draw()
@@ -37,6 +40,7 @@ function love.draw()
     Mapa.draw()
     Player.draw()
     Enemy.draw()
+    Helga.draw()
   Camera.unset()
   love.graphics.setColor(1, 1, 1)
   love.graphics.print("Protagonista: " .. Player.nome, 10, 10)
