@@ -150,6 +150,9 @@ function Helga.update(dt, player)
       Helga.vivo = false
       Helga.frame_atual = 1
       Helga.tempo_animacao = 0
+      for _, p in ipairs(Helga.projeteis) do
+        p.vivo = false
+      end
     else
       Helga.estado = "hit"
       Helga.frame_atual = 1

@@ -61,7 +61,7 @@ function Enemy.load()
   Enemy.pode_tomar_dano = true
   Enemy.tempo_dano = 0
   Enemy.cooldown_dano = 0.5
-  Enemy.frame_dano = 8 -- ajuste conforme a animação
+  Enemy.frame_dano = 8 
   Enemy.dano_aplicado = false
 
   Enemy.estado = "idle"
