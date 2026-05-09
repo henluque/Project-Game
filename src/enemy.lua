@@ -48,7 +48,7 @@ function Enemy.load()
   Enemy.vida = 40
   Enemy.vivo = true
 
-  Enemy.x = 500
+  Enemy.x = 450
   Enemy.y = 350
 
   Enemy.largura = 32
@@ -97,9 +97,11 @@ function Enemy.load()
     death = 0.15
   }
 
-  Enemy.escala = 3
+  Enemy.escala = 2
   Enemy.direcao = -1
 
+  Enemy.offset_y = 100
+  
   Enemy.y_velocidade = 0
   Enemy.gravidade = 1200
   Enemy.no_chao = false
@@ -288,7 +290,7 @@ function Enemy.draw()
   local quad = quads[Enemy.frame_atual] or quads[1]
 
   local pivot_x = Enemy.x + (Enemy.largura / 2)
-  local pivot_y = Enemy.y + Enemy.altura + 148
+  local pivot_y = Enemy.y + Enemy.altura + Enemy.offset_y
 
   love.graphics.draw(
     sprite,

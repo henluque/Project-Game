@@ -71,8 +71,8 @@ end
 function Player.load()
   Player.nome = "Boris"
   Player.vida = 100
-  Player.x = 350
-  Player.y = 0 
+  Player.x = 100
+  Player.y = 200
   Player.velocidade_mov = 250
   
   Player.y_velocidade = 0
@@ -123,10 +123,10 @@ function Player.load()
   Player.estado = "parado"
   Player.estado_anterior = "parado"
   Player.direcao = 1
-  Player.escala = 3
+  Player.escala = 2.3
   
   Player.offset_x = 0
-  Player.offset_y = 147
+  Player.offset_y = 115
   
   Player.combo_passo = 0
   Player.combo_fila = 0
@@ -326,9 +326,6 @@ function Player.update(dt, plataformas)
 end
 
 function Player.draw()
-  love.graphics.setColor(1, 0, 0, 0.4)
-  love.graphics.rectangle("fill", Player.x, Player.y, Player.largura, Player.altura)
-  -- debug: mostra a hitbox de ataque em amarelo
   local hb = Player.getHitboxAtaque()
   if hb then
     love.graphics.setColor(1, 1, 0, 0.5)

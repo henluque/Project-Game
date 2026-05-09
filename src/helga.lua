@@ -71,7 +71,7 @@ function Helga.load()
   Helga.tempo_animacao = 0
   Helga.frame_delay = 0.1
   Helga.escala = 2.5
-  Helga.y_offset = 145
+  Helga.y_offset = 140
 
   local function carregarAnim(nome, frames)
     local img, quads, w, h = carrega_sheet("assets/sprites/helga/corrupted/" .. nome .. ".png", frames)
