@@ -77,8 +77,13 @@ function Player.load()
   
   Player.y_velocidade = 0
   Player.gravidade = 1200
-  Player.forca_pulo = -700
+  Player.forca_pulo = -500
   Player.no_chao = false
+
+  -- Pulo duplo
+  Player.pulos_max        = 2      -- total de pulos permitidos
+  Player.pulos_restantes  = 2      -- reset ao pousar
+  Player.pulo_pressionado = false  -- sinaliza keypressed → update
   
   Player.largura = 32
   Player.altura = 64
@@ -136,7 +141,12 @@ end
 function Player.keypressed(key) 
   local pad = love.joystick.getJoysticks()[1]
   local eh_ataque = (key == "z" or key =="k")
-  
+  local eh_pulo   = (key == "up" or key == "w" or key == "space")
+
+  if eh_pulo and not (Player.estado == "hit" or Player.estado == "death") then
+    Player.pulo_pressionado = true
+  end
+
   if eh_ataque then
     if Player.combo_passo == 0 then
       Player.combo_passo = 1
@@ -155,6 +165,9 @@ function Player.gamepadpressed(button)
   if button == "x" then
     Player.keypressed("z")
   end
+  if button == "a" then
+    Player.keypressed("up")
+  end
 end
 
 function Player.update(dt, plataformas)
@@ -166,7 +179,6 @@ function Player.update(dt, plataformas)
   
   local atacando = (Player.combo_passo > 0)
   local mov_dir    = 0
-  local botao_pulo = (love.keyboard.isDown("up") or love.keyboard.isDown("w"))
   
   -- cooldown de dano
   if not Player.pode_tomar_dano then
@@ -189,7 +201,6 @@ function Player.update(dt, plataformas)
   if pad then
     if   pad:isGamepadDown("dpright") or pad:getGamepadAxis("leftx") >  0.3 then mov_dir =  1
     elseif pad:isGamepadDown("dpleft") or pad:getGamepadAxis("leftx") < -0.3 then mov_dir = -1 end
-    if pad:isGamepadDown("a") then botao_pulo = true end
   end
 
   if not travado then
@@ -200,6 +211,8 @@ function Player.update(dt, plataformas)
       end
     end
   end
+  
+  Player.x = math.max(0, math.min(Player.x, Mapa.largura - Player.largura))
   
   Player.y_velocidade = Player.y_velocidade + (Player.gravidade * dt)
   Player.y = Player.y + (Player.y_velocidade * dt)
@@ -214,13 +227,27 @@ function Player.update(dt, plataformas)
 
       Player.y            = plat.y - Player.altura
       Player.y_velocidade = 0
-      Player.no_chao      = true
+
+      -- pousa: restaura pulos
+      if not Player.no_chao then
+        Player.pulos_restantes = Player.pulos_max
+      end
+      Player.no_chao = true
     end
   end
 
-  if botao_pulo and Player.no_chao and not travado then
-    Player.y_velocidade = Player.forca_pulo
+  -- ── Pulo (simples ou duplo) ─────────────────────────────────
+  if Player.pulo_pressionado and not travado then
+    if Player.pulos_restantes > 0 then
+      Player.y_velocidade    = Player.forca_pulo
+      Player.pulos_restantes = Player.pulos_restantes - 1
+      -- força estado pulando para resetar a animação imediatamente
+      Player.estado          = "pulando"
+      Player.frame_atual     = 1
+      Player.tempo_animacao  = 0
+    end
   end
+  Player.pulo_pressionado = false   -- consome o sinal (1 frame)
 
   if atacando and Player.estado ~= "hit" and Player.estado ~= "death" then
     local vel = Player.vel_anim[Player.estado] or 0.10
@@ -299,16 +326,6 @@ function Player.update(dt, plataformas)
   }
   
   local limite = limites[Player.estado] or #Player.quads_idle
-  
-  --if Player.estado == "pulando" or Player.estado == "caindo" then 
-    --if Player.frame_atual > limite then 
-      --Player.frame_atual = limite
-    --end 
-  --else
-    --if Player.frame_atual > limite then
-      --Player.frame_atual = 1
-    --end
-  --end
   
   if Player.frame_atual > limite then
     if Player.estado == "hit" then
