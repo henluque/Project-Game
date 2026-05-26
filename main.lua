@@ -7,10 +7,16 @@ require "src/magnus"
 
 function love.keypressed(key)
   Player.keypressed(key)
+  if key == "x" or key == "k" then
+    Mapa.interagir(Player)
+  end
 end
 
 function love.gamepadpressed(joystick, button)
   Player.gamepadpressed(button)
+  if button == "x" then
+    Mapa.interagir(Player)
+  end
 end
 
 function love.load()
@@ -86,4 +92,7 @@ function love.draw()
 
   love.graphics.setColor(1, 1, 1)
   love.graphics.print("HP: " .. Player.vida, 10, 30)
+
+  -- HUD fora da câmera
+  Mapa.drawHUD()
 end
