@@ -22,6 +22,10 @@ salas["entrada_floresta"] = function(s)
       { x = 0    * s, y = 475 * s, largura = 585 * s, altura = 250 },
       -- segundo chão esquerda
       { x = 688  * s, y = 475 * s, largura = 245 * s, altura = 250 },
+      -- item
+      itens = {
+        { x = 220, y = 60, coletado = false }  -- em cima da plataforma 1
+      },
       -- Chão Meio
       { x = 1100 * s, y = 525 * s, largura = 315 * s, altura = 200 },
       -- Primeiro chão direita
@@ -53,7 +57,7 @@ salas["entrada_floresta"] = function(s)
           largura      = 50,
           altura       = 524 * s,
           proxima_sala = "coracao_floresta",
-          entrada_x    = 60,
+          entrada_x    = 100,
           entrada_y    = 400, 
           entrada_lado = "esquerda",
         },
@@ -79,13 +83,13 @@ salas["coracao_floresta"] = function(s)
       return {
         -- Volta para a Floresta Corrompida pela esquerda
         {
-          x            = 0,
+          x            = 0 * s,
           y            = 0 * s,
           largura      = 10,
           altura       = 790 * s,
           proxima_sala = "entrada_floresta",
           entrada_x    = 1700,
-          entrada_y    = 400,
+          entrada_y    = 300,
           entrada_lado = "direita",
         },
       }
@@ -111,6 +115,8 @@ function Mapa.carregar(nome_sala)
   local s = love.graphics.getHeight() / img_temp:getHeight()
 
   local dados = salas[nome_sala](s)
+  
+  Mapa.itens = dados.itens or {}
 
   Mapa.fundo         = img_temp
   Mapa.escala_fundo  = s

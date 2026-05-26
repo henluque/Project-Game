@@ -24,19 +24,8 @@ function love.load()
   escala_fundo = love.graphics.getHeight() / fundo:getHeight()
 end
 
-tempo_morte = 0
-
 function love.update(dt)
   Player.update(dt, Mapa.plataformas)
-
-  if not Player.vivo then
-    tempo_morte = tempo_morte + dt
-    if tempo_morte >= 1.5 then
-      tempo_morte = 0
-      love.load()
-    end
-    return
-  end
 
   local sala_anterior = Mapa.nome_atual
   Mapa.checarPortais(Player)
@@ -52,15 +41,6 @@ function love.update(dt)
   if Mapa.nome_atual == "entrada_floresta" then
     Enemy.update(dt, Player, Mapa.plataformas)
     Magnus.update(dt, Player, Mapa.plataformas)
-    for _, item in ipairs(Mapa.itens) do
-      if not item.coletado then
-        if Player.x < item.x + 20 and Player.x + Player.largura > item.x and
-          Player.y < item.y + 20 and Player.y + Player.altura  > item.y then
-          item.coletado = true
-          Player.tem_item = true
-        end
-      end
-    end
   elseif Mapa.nome_atual == "coracao_floresta" then
     Helga.update(dt, Player)
   end

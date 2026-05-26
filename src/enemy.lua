@@ -1,4 +1,7 @@
 Enemy = {}
+Enemy.lista = {}
+
+local sprites = nil
 
 local function carrega_sheet(caminho, num_frames)
   local img = love.graphics.newImage(caminho)
@@ -16,6 +19,20 @@ local function carrega_sheet(caminho, num_frames)
   return img, quads, slot, h
 end
 
+local function carrega_sprites()
+  if sprites then return end
+  
+  sprites = {}
+  sprites.idle_img,   sprites.idle_q,   sprites.idle_w,   sprites.idle_h   = carrega_sheet("assets/sprites/goblin/Idle.png",     4)
+  sprites.run_img,    sprites.run_q,     sprites.run_w,    sprites.run_h    = carrega_sheet("assets/sprites/goblin/Run.png",      8)
+  sprites.attack_img, sprites.attack_q,  sprites.attack_w, sprites.attack_h = carrega_sheet("assets/sprites/goblin/Attack.png",   8)
+  sprites.hit_img,    sprites.hit_q,     sprites.hit_w,    sprites.hit_h    = carrega_sheet("assets/sprites/goblin/Take_hit.png", 4)
+  sprites.death_img,  sprites.death_q,   sprites.death_w,  sprites.death_h  = carrega_sheet("assets/sprites/goblin/Death.png",   4)
+  -- audios --
+  sprites.som_ataque = love.audio.newSource("assets/audio/goblin/Attack.mp3", "static")
+  
+end
+
 local function colide(a, b)
   return a.x < b.x + b.largura and
          a.x + a.largura > b.x and
@@ -23,284 +40,290 @@ local function colide(a, b)
          a.y + a.altura > b.y
 end
 
-function Enemy.getHitboxAtaque()
-  local largura = 80
-  local altura = Enemy.altura + 20
+local function goblin(x, y)
+  return {
+    vivo = true,
+    x = x,
+    y = y,
+    largura = 32,
+    altura = 32,
 
-  if Enemy.direcao == 1 then
-    return {
-      x = Enemy.x + Enemy.largura,
-      y = Enemy.y,
-      largura = largura,
-      altura = altura
-    }
+    vida = 40,
+    velocidade = 100,
+    raio_visao = 250,
+    dist_ataque = 60,
+    som_tocou = false,
+
+    pode_tomar_dano = true,
+    tempo_dano = 0,
+    cooldown_dano = 0.5,
+
+    estado = "idle",
+    frame_atual = 1,
+    tempo_animacao = 0,
+    frame_dano = 8,
+    dano_aplicado = false,
+
+    pode_atacar = true,
+    tempo_ataque = 0,
+    cooldown_ataque = 1,
+
+    vel_anim = {
+      idle   = 0.15,
+      run    = 0.12,
+      attack = 0.08,
+      hit    = 0.1,
+      death  = 0.15,
+    },
+
+    escala   = 2,
+    direcao  = -1,
+    offset_y = 100,
+
+    y_velocidade = 0,
+    gravidade    = 1200,
+    no_chao      = false,
+  }
+end
+
+local posicoes_spawn = {
+  { x = 450,  y = 350 },
+  { x = 900,  y = 350 },
+  { x = 1400, y = 400 },
+}
+
+local function getHitboxAtaque(g)
+  local largura = 80
+  local altura  = g.altura + 20
+
+  if g.direcao == 1 then
+    return { x = g.x + g.largura, y = g.y, largura = largura, altura = altura }
   else
-    return {
-      x = Enemy.x - largura,
-      y = Enemy.y,
-      largura = largura,
-      altura = altura
-    }
+    return { x = g.x - largura,   y = g.y, largura = largura, altura = altura }
   end
 end
 
 function Enemy.load()
-  Enemy.vida = 40
-  Enemy.vivo = true
-
-  Enemy.x = 450
-  Enemy.y = 350
-
-  Enemy.largura = 32
-  Enemy.altura = 32
-
-  Enemy.velocidade = 100
-  Enemy.raio_visao = 250
-  Enemy.dist_ataque = 60
-
-  Enemy.pode_tomar_dano = true
-  Enemy.tempo_dano = 0
-  Enemy.cooldown_dano = 0.5
-  Enemy.frame_dano = 8 
-  Enemy.dano_aplicado = false
-
-  Enemy.estado = "idle"
-  
-  Enemy.pode_atacar = true
-  Enemy.tempo_ataque = 0
-  Enemy.cooldown_ataque = 1 
-
-  -- SPRITES
-  Enemy.sprite_idle, Enemy.quads_idle, Enemy.frame_w, Enemy.frame_h =
-    carrega_sheet("assets/sprites/goblin/Idle.png", 4)
-
-  Enemy.sprite_run, Enemy.quads_run, Enemy.frame_w_r, Enemy.frame_h_r =
-    carrega_sheet("assets/sprites/goblin/Run.png", 8)
-
-  Enemy.sprite_attack, Enemy.quads_attack, Enemy.frame_w_a, Enemy.frame_h_a =
-    carrega_sheet("assets/sprites/goblin/Attack.png", 8)
-
-  Enemy.sprite_hit, Enemy.quads_hit, Enemy.frame_w_h, Enemy.frame_h_h =
-    carrega_sheet("assets/sprites/goblin/Take_hit.png", 4)
-
-  Enemy.sprite_death, Enemy.quads_death, Enemy.frame_w_d, Enemy.frame_h_d =
-    carrega_sheet("assets/sprites/goblin/Death.png", 4)
-
-  Enemy.frame_atual = 1
-  Enemy.tempo_animacao = 0
-
-  Enemy.vel_anim = {
-    idle = 0.15,
-    run = 0.12,
-    attack = 0.08,
-    hit = 0.1,
-    death = 0.15
-  }
-
-  Enemy.escala = 2
-  Enemy.direcao = -1
-
-  Enemy.offset_y = 100
-  
-  Enemy.y_velocidade = 0
-  Enemy.gravidade = 1200
-  Enemy.no_chao = false
+  carrega_sprites()
+  Enemy.lista = {}
+  for _, pos in ipairs(posicoes_spawn) do
+    table.insert(Enemy.lista, goblin(pos.x, pos.y))
+  end
 end
 
-function Enemy.update(dt, player, plataformas)
-  
-  if not player.vivo then
-    Enemy.estado = "idle"
-    return
-  end
-
-  local hitbox = player.getHitboxAtaque and player.getHitboxAtaque()
-
-  if not Enemy.pode_tomar_dano then
-    Enemy.tempo_dano = Enemy.tempo_dano + dt
-    if Enemy.tempo_dano >= Enemy.cooldown_dano then
-      Enemy.pode_tomar_dano = true
-      Enemy.tempo_dano = 0
+local function update_goblin(g, dt, player, plataformas)
+  -- cooldown de dano recebido
+  if not g.pode_tomar_dano then
+    g.tempo_dano = g.tempo_dano + dt
+    if g.tempo_dano >= g.cooldown_dano then
+      g.pode_tomar_dano = true
+      g.tempo_dano = 0
     end
   end
-  
+
   -- cooldown de ataque
-  if not Enemy.pode_atacar then
-    Enemy.tempo_ataque = Enemy.tempo_ataque + dt
-    if Enemy.tempo_ataque >= Enemy.cooldown_ataque then
-      Enemy.pode_atacar = true
-      Enemy.tempo_ataque = 0
+  if not g.pode_atacar then
+    g.tempo_ataque = g.tempo_ataque + dt
+    if g.tempo_ataque >= g.cooldown_ataque then
+      g.pode_atacar = true
+      g.tempo_ataque = 0
     end
   end
 
-  if hitbox and colide(Enemy, hitbox) and Enemy.pode_tomar_dano and Enemy.vivo then
-    Enemy.vida = Enemy.vida - 10
-    Enemy.pode_tomar_dano = false
+  -- receber dano do player
+  local hitbox_player = player.getHitboxAtaque and player.getHitboxAtaque()
+  if hitbox_player and colide(g, hitbox_player) and g.pode_tomar_dano and g.vivo then
+    g.vida = g.vida - 10
+    g.pode_tomar_dano = false
 
-    if Enemy.vida <= 0 then
-      Enemy.estado = "death"
-      Enemy.frame_atual = 1
-      Enemy.tempo_animacao = 0
-      Enemy.vivo = false
+    if g.vida <= 0 then
+      g.estado = "death"
+      g.frame_atual = 1
+      g.tempo_animacao = 0
+      g.vivo = false
     else
-      Enemy.estado = "hit"
-      Enemy.frame_atual = 1
-      Enemy.tempo_animacao = 0
-
-      Enemy.x = Enemy.x + (player.direcao * 60)
+      g.estado = "hit"
+      g.frame_atual = 1
+      g.tempo_animacao = 0
+      g.x = g.x + (player.direcao * 60)
     end
   end
 
-  -- BLOQUEIA IA DURANTE HIT/DEATH
-  if Enemy.estado ~= "hit" and Enemy.estado ~= "death" then
-
-    local dx = player.x - Enemy.x
-    local dy = player.y - Enemy.y
-
+  -- IA (bloqueada durante hit/death)
+  if g.estado ~= "hit" and g.estado ~= "death" then
+    local dx     = player.x - g.x
+    local dy     = player.y - g.y
     local dist_x = math.abs(dx)
     local dist_y = math.abs(dy)
 
-    Enemy.direcao = (dx > 0) and 1 or -1
+    g.direcao = (dx > 0) and 1 or -1
 
     local alinhado_vertical = dist_y < 40
 
-    if dist_x < Enemy.dist_ataque and alinhado_vertical then
-      if Enemy.estado ~= "attack" then
-        Enemy.estado = "attack"
-        Enemy.frame_atual = 1
-        Enemy.tempo_animacao = 0
-        Enemy.dano_aplicado = false
+    if dist_x < g.dist_ataque and alinhado_vertical then
+      if g.estado ~= "attack" then
+        g.estado = "attack"
+        g.frame_atual = 1
+        g.tempo_animacao = 0
+        g.dano_aplicado = false
       end
 
-    elseif dist_x < Enemy.raio_visao then
-      if alinhado_vertical then
-        Enemy.estado = "run"
-      else
-        Enemy.estado = "idle"
-      end
+    elseif dist_x < g.raio_visao and alinhado_vertical then
+      g.estado = "run"
 
     else
-      Enemy.estado = "idle"
+      g.estado = "idle"
     end
   end
 
-  if Enemy.estado == "run" then
-    Enemy.x = Enemy.x + Enemy.velocidade * Enemy.direcao * dt
+  -- movimento
+  -- movimento
+  if g.estado == "run" then
+    -- verifica se há chão à frente antes de mover
+    local proximo_x = g.x + g.velocidade * g.direcao * dt
+    local tem_chao_a_frente = false
+
+    for _, plat in ipairs(plataformas or {}) do
+      -- borda da frente do goblin na posição futura
+      local borda_frente
+      if g.direcao == 1 then
+        borda_frente = proximo_x + g.largura
+      else
+        borda_frente = proximo_x
+      end
+
+      local dentro_plat_x = borda_frente >= plat.x and borda_frente <= plat.x + plat.largura
+      local chao_logo_abaixo = plat.y >= g.y + g.altura and plat.y <= g.y + g.altura + 16
+
+      if dentro_plat_x and chao_logo_abaixo then
+        tem_chao_a_frente = true
+        break
+      end
+    end
+
+    if tem_chao_a_frente then
+      g.x = proximo_x
+    else
+      g.estado = "idle"
+    end
+    
   end
 
-  Enemy.y_velocidade = Enemy.y_velocidade + Enemy.gravidade * dt
-  Enemy.y = Enemy.y + Enemy.y_velocidade * dt
-  Enemy.no_chao = false
+  -- gravidade
+  g.y_velocidade = g.y_velocidade + g.gravidade * dt
+  g.y = g.y + g.y_velocidade * dt
+  g.no_chao = false
 
   for _, plat in ipairs(plataformas or {}) do
-    if Enemy.y + Enemy.altura >= plat.y and
-       Enemy.y + Enemy.altura <= plat.y + 10 and
-       Enemy.x + Enemy.largura > plat.x and
-       Enemy.x < plat.x + plat.largura and
-       Enemy.y_velocidade >= 0 then
+    if g.y + g.altura >= plat.y and
+       g.y + g.altura <= plat.y + 10 and
+       g.x + g.largura > plat.x and
+       g.x < plat.x + plat.largura and
+       g.y_velocidade >= 0 then
 
-      Enemy.y = plat.y - Enemy.altura
-      Enemy.y_velocidade = 0
-      Enemy.no_chao = true
+      g.y = plat.y - g.altura
+      g.y_velocidade = 0
+      g.no_chao = true
     end
   end
 
-  local vel = Enemy.vel_anim[Enemy.estado] or 0.1
-  Enemy.tempo_animacao = Enemy.tempo_animacao + dt
-
-  if Enemy.tempo_animacao >= vel then
-    Enemy.tempo_animacao = 0
-    Enemy.frame_atual = Enemy.frame_atual + 1
+  -- animação
+  local vel = g.vel_anim[g.estado] or 0.1
+  g.tempo_animacao = g.tempo_animacao + dt
+  if g.tempo_animacao >= vel then
+    g.tempo_animacao = 0
+    g.frame_atual = g.frame_atual + 1
+    
+    -- som no último frame do ataque
+    if g.estado == "attack" and g.frame_atual == #sprites.attack_q and not g.som_tocou then
+      sprites.som_ataque:stop()
+      sprites.som_ataque:play()
+      g.som_tocou = true
+    end
   end
 
-  local limite = 1
+  local limites = {
+    idle   = #sprites.idle_q,
+    run    = #sprites.run_q,
+    attack = #sprites.attack_q,
+    hit    = #sprites.hit_q,
+    death  = #sprites.death_q,
+  }
+  local limite = limites[g.estado] or 1
 
-  if Enemy.estado == "idle" then
-    limite = #Enemy.quads_idle
-  elseif Enemy.estado == "run" then
-    limite = #Enemy.quads_run
-  elseif Enemy.estado == "attack" then
-    limite = #Enemy.quads_attack
-  elseif Enemy.estado == "hit" then
-    limite = #Enemy.quads_hit
-  elseif Enemy.estado == "death" then
-    limite = #Enemy.quads_death
-  end
-
-  if Enemy.frame_atual > limite then
-    if Enemy.estado == "hit" then
-      Enemy.estado = "idle"
-      Enemy.frame_atual = 1
-
-    elseif Enemy.estado == "death" then
-      Enemy.frame_atual = limite
-
+  if g.frame_atual > limite then
+     g.som_tocou = false
+    if g.estado == "hit" then
+      g.estado = "idle"
+      g.frame_atual = 1
+    elseif g.estado == "death" then
+      g.frame_atual = limite
     else
-      Enemy.frame_atual = 1
+      g.frame_atual = 1
     end
   end
-  
-  if Enemy.estado == "attack" and Enemy.vivo and player.vivo then
-    if Enemy.frame_atual == Enemy.frame_dano and not Enemy.dano_aplicado then
-      local hitbox = Enemy.getHitboxAtaque()
-      if colide(player, hitbox) then
-        player.tomarDano(Enemy.direcao, 10)
+
+  -- aplicar dano no player
+  if g.estado == "attack" and g.vivo and player.vivo then
+    if g.frame_atual == g.frame_dano and not g.dano_aplicado then
+      local hb = getHitboxAtaque(g)
+      if colide(player, hb) then
+        player.tomarDano(g.direcao, 10)
       end
-      Enemy.dano_aplicado = true
+      g.dano_aplicado = true
     end
   end
-  Enemy.dano_aplicado = false
-  
+
+  -- reseta flag de dano no fim do frame
+  if g.frame_atual ~= g.frame_dano then
+    g.dano_aplicado = false
+  end
+end
+
+function Enemy.update(dt, player, plataformas)
+  if not player.vivo then return end
+
+  for _, g in ipairs(Enemy.lista) do
+    if g.vivo or g.estado == "death" then
+      update_goblin(g, dt, player, plataformas)
+    end
+  end
+end
+
+local function draw_goblin(g)
+  local img, quads, fw, fh
+
+  if g.estado == "attack" then
+    img, quads, fw, fh = sprites.attack_img, sprites.attack_q, sprites.attack_w, sprites.attack_h
+  elseif g.estado == "hit" then
+    img, quads, fw, fh = sprites.hit_img,    sprites.hit_q,    sprites.hit_w,    sprites.hit_h
+  elseif g.estado == "death" then
+    img, quads, fw, fh = sprites.death_img,  sprites.death_q,  sprites.death_w,  sprites.death_h
+  elseif g.estado == "run" then
+    img, quads, fw, fh = sprites.run_img,    sprites.run_q,    sprites.run_w,    sprites.run_h
+  else
+    img, quads, fw, fh = sprites.idle_img,   sprites.idle_q,   sprites.idle_w,   sprites.idle_h
+  end
+
+  local quad    = quads[g.frame_atual] or quads[1]
+  local pivot_x = g.x + (g.largura / 2)
+  local pivot_y = g.y + g.altura + g.offset_y
+
+  love.graphics.draw(
+    img, quad,
+    pivot_x, pivot_y,
+    0,
+    g.escala * g.direcao,
+    g.escala,
+    fw / 2,
+    fh
+  )
 end
 
 function Enemy.draw()
-  local sprite, quads, frame_w, frame_h
-
-  if Enemy.estado == "attack" then
-    sprite = Enemy.sprite_attack
-    quads = Enemy.quads_attack
-    frame_w = Enemy.frame_w_a
-    frame_h = Enemy.frame_h_a
-
-  elseif Enemy.estado == "hit" then
-    sprite = Enemy.sprite_hit
-    quads = Enemy.quads_hit
-    frame_w = Enemy.frame_w_h
-    frame_h = Enemy.frame_h_h
-
-  elseif Enemy.estado == "death" then
-    sprite = Enemy.sprite_death
-    quads = Enemy.quads_death
-    frame_w = Enemy.frame_w_d
-    frame_h = Enemy.frame_h_d
-
-  elseif Enemy.estado == "run" then
-    sprite = Enemy.sprite_run
-    quads = Enemy.quads_run
-    frame_w = Enemy.frame_w_r
-    frame_h = Enemy.frame_h_r
-
-  else
-    sprite = Enemy.sprite_idle
-    quads = Enemy.quads_idle
-    frame_w = Enemy.frame_w
-    frame_h = Enemy.frame_h
+  for _, g in ipairs(Enemy.lista) do
+    if g.vivo or g.estado == "death" then
+      draw_goblin(g)
+    end
   end
-
-  local quad = quads[Enemy.frame_atual] or quads[1]
-
-  local pivot_x = Enemy.x + (Enemy.largura / 2)
-  local pivot_y = Enemy.y + Enemy.altura + Enemy.offset_y
-
-  love.graphics.draw(
-    sprite,
-    quad,
-    pivot_x,
-    pivot_y,
-    0,
-    Enemy.escala * Enemy.direcao,
-    Enemy.escala,
-    frame_w / 2,
-    frame_h
-  )
 end

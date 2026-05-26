@@ -74,10 +74,11 @@ function Player.load()
   Player.x = 100
   Player.y = 200
   Player.velocidade_mov = 250
+  Player.tem_item = false;
   
   Player.y_velocidade = 0
   Player.gravidade = 1200
-  Player.forca_pulo = -700
+  Player.forca_pulo = -500
   Player.no_chao = false
   
   Player.largura = 32
@@ -107,6 +108,19 @@ function Player.load()
   Player.sprite_hit, Player.quads_hit, Player.frame_w_hit, Player.frame_h_hit = carrega_sheet("assets/sprites/player/Get_hit.png", 3)
   
   Player.sprite_death, Player.quads_death, Player.frame_w_death, Player.frame_h_death = carrega_sheet("assets/sprites/player/Death.png", 9)
+  
+  -- AUDIOS -- 
+  Player.som_ataque1 = love.audio.newSource("assets/audio/player/Attack1.mp3", "static")
+  
+  Player.som_ataque2 = love.audio.newSource("assets/audio/player/Attack2.mp3", "static")
+  
+  Player.som_ataque3 = love.audio.newSource("assets/audio/player/Attack3.mp3", "static")
+  
+  Player.som1_tocou = false
+  Player.som2_tocou = false
+  Player.som3_tocou = false
+  
+  
   
   Player.vel_anim = {
     parado = 0.08,
@@ -143,10 +157,16 @@ function Player.keypressed(key)
       Player.frame_atual = 1
       Player.tempo_animacao = 0
       Player.estado = "ataque1"
+      --Player.som_ataque1:stop()  -- stop antes de play evita sobreposição
+      --Player.som_ataque1:play()
     elseif Player.combo_passo == 1 and Player.combo_fila == 0 then
       Player.combo_fila = 2
+      --Player.som_ataque2:stop()
+      --Player.som_ataque2:play()
     elseif Player.combo_passo == 2 and Player.combo_fila == 0 then
       Player.combo_fila = 3
+      --Player.som_ataque3:stop()
+      --Player.som_ataque3:play()
     end
   end
 end
@@ -217,6 +237,10 @@ function Player.update(dt, plataformas)
       Player.no_chao      = true
     end
   end
+  
+  if Player.x < 0 then
+    Player.x = 0
+  end
 
   if botao_pulo and Player.no_chao and not travado then
     Player.y_velocidade = Player.forca_pulo
@@ -231,6 +255,23 @@ function Player.update(dt, plataformas)
       Player.tempo_animacao = 0
       Player.frame_atual = Player.frame_atual + 1
       
+      -- SONS DE ATAQUE (toca no frame do golpe)
+      if Player.estado == "ataque1" and Player.frame_atual == 3 and not Player.som1_tocou then
+        Player.som_ataque1:stop()
+        Player.som_ataque1:play()
+        Player.som1_tocou = true
+      end
+      if Player.estado == "ataque2" and Player.frame_atual == 3 and not Player.som2_tocou then
+        Player.som_ataque2:stop()
+        Player.som_ataque2:play()
+        Player.som2_tocou = true
+      end
+      if Player.estado == "ataque3" and Player.frame_atual == 3 and not Player.som3_tocou then
+        Player.som_ataque3:stop()
+        Player.som_ataque3:play()
+        Player.som3_tocou = true
+      end
+      
       local limites = {
         ataque1 = #Player.quads_ataque1,
         ataque2 = #Player.quads_ataque2,
@@ -239,6 +280,9 @@ function Player.update(dt, plataformas)
       local limite = limites[Player.estado] or 1
       
       if Player.frame_atual > limite then
+        Player.som1_tocou = false  
+        Player.som2_tocou = false 
+        Player.som3_tocou = false  
         if Player.combo_fila > 0 then
           Player.combo_passo = Player.combo_fila
           Player.combo_fila = 0
