@@ -87,11 +87,13 @@ local function goblin(x, y)
 end
 
 local posicoes_spawn = {
-  { x = 450,  y = 350 },
-  { x = 900,  y = 350 },
-  { x = 1400, y = 400 },
+  { x = 450,  y = 362 },
+  { x = 800,  y = 362 },
+  { x = 630,  y = 170 },
+  { x = 970,  y = 280 },
+  { x = 1400, y = 314 },
+  { x = 1800, y = 170 }
 }
-
 local function getHitboxAtaque(g)
   local largura = 80
   local altura  = g.altura + 20
@@ -106,8 +108,12 @@ end
 function Enemy.load()
   carrega_sprites()
   Enemy.lista = {}
+  local s = Mapa.escala or 1
   for _, pos in ipairs(posicoes_spawn) do
-    table.insert(Enemy.lista, goblin(pos.x, pos.y))
+    local g = goblin(pos.x * s, pos.y * s)
+    g.no_chao = true
+    g.y_velocidade = 0
+    table.insert(Enemy.lista, g)
   end
 end
 
@@ -149,7 +155,6 @@ local function update_goblin(g, dt, player, plataformas)
     end
   end
 
-  -- IA (bloqueada durante hit/death)
   if g.estado ~= "hit" and g.estado ~= "death" then
     local dx     = player.x - g.x
     local dy     = player.y - g.y
@@ -176,15 +181,11 @@ local function update_goblin(g, dt, player, plataformas)
     end
   end
 
-  -- movimento
-  -- movimento
   if g.estado == "run" then
-    -- verifica se há chão à frente antes de mover
     local proximo_x = g.x + g.velocidade * g.direcao * dt
     local tem_chao_a_frente = false
 
     for _, plat in ipairs(plataformas or {}) do
-      -- borda da frente do goblin na posição futura
       local borda_frente
       if g.direcao == 1 then
         borda_frente = proximo_x + g.largura
@@ -209,14 +210,13 @@ local function update_goblin(g, dt, player, plataformas)
     
   end
 
-  -- gravidade
   g.y_velocidade = g.y_velocidade + g.gravidade * dt
   g.y = g.y + g.y_velocidade * dt
   g.no_chao = false
 
   for _, plat in ipairs(plataformas or {}) do
     if g.y + g.altura >= plat.y and
-       g.y + g.altura <= plat.y + 10 and
+        g.y + g.altura <= plat.y + 60 and
        g.x + g.largura > plat.x and
        g.x < plat.x + plat.largura and
        g.y_velocidade >= 0 then
@@ -227,14 +227,12 @@ local function update_goblin(g, dt, player, plataformas)
     end
   end
 
-  -- animação
   local vel = g.vel_anim[g.estado] or 0.1
   g.tempo_animacao = g.tempo_animacao + dt
   if g.tempo_animacao >= vel then
     g.tempo_animacao = 0
     g.frame_atual = g.frame_atual + 1
     
-    -- som no último frame do ataque
     if g.estado == "attack" and g.frame_atual == #sprites.attack_q and not g.som_tocou then
       sprites.som_ataque:stop()
       sprites.som_ataque:play()
@@ -263,7 +261,6 @@ local function update_goblin(g, dt, player, plataformas)
     end
   end
 
-  -- aplicar dano no player
   if g.estado == "attack" and g.vivo and player.vivo then
     if g.frame_atual == g.frame_dano and not g.dano_aplicado then
       local hb = getHitboxAtaque(g)
@@ -274,7 +271,6 @@ local function update_goblin(g, dt, player, plataformas)
     end
   end
 
-  -- reseta flag de dano no fim do frame
   if g.frame_atual ~= g.frame_dano then
     g.dano_aplicado = false
   end

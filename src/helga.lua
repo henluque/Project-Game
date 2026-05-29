@@ -45,7 +45,7 @@ local function colide(a, b)
 end
 
 function Helga.load()
-  Helga.vida = 200
+  Helga.vida = 50
   Helga.x = 600
   Helga.y = 300
   Helga.largura = 64
@@ -56,6 +56,7 @@ function Helga.load()
   Helga.estado = "idle"
   Helga.direcao = 1
   Helga.ressurgindo = false
+  Helga.renascida = false
   Helga.frame_ressureicao = 0  -- conta de trás pra frente
 
   Helga.cooldown_ataque = 2
@@ -79,6 +80,12 @@ function Helga.load()
     local img, quads, w, h = carrega_sheet("assets/sprites/helga/corrupted/" .. nome .. ".png", frames)
     return { img = img, quads = quads, w = w, h = h }
   end
+  
+  local function carregarAnim_Resurrected(nome, frames)
+    local img, quads, w, h = carrega_sheet("assets/sprites/helga/purified/" .. nome .. ".png", frames)
+    return { img = img, quads = quads, w = w, h = h }
+  end
+  
   Helga.som_disparo = love.audio.newSource("assets/audio/helga/Projectile.mp3", "static")
   Helga.som_impacto = love.audio.newSource("assets/audio/helga/Projectile_Impact.mp3", "static")
 
@@ -87,6 +94,9 @@ function Helga.load()
   Helga.animacoes.attack = carregarAnim("Attack",  13)
   Helga.animacoes.hit    = carregarAnim("Get_hit",  3)
   Helga.animacoes.death  = carregarAnim("Death",   18)
+  Helga.animacoes.ressureicao = carregarAnim_Resurrected("Death", 18)
+  Helga.animacoes.idle_purified = carregarAnim_Resurrected("Idle", 10)
+  
 
   Helga.frame_tiro = 8
   Helga.atirou = false
@@ -103,25 +113,35 @@ function Helga.update(dt, player)
     -- Checagem: player encostou com o item
     if Player.tem_item and not Helga.ressurgindo then
       local dx = math.abs(Player.x - Helga.x)
-      local dy = math.abs(Player.y - Helga.y)
-      if dx < 80 and dy < 100 then
+      local helga_y_visual = Helga.y + Helga.y_offset - Helga.altura
+      local dy = math.abs((Player.y + Player.altura) - helga_y_visual)
+      if dx < 35 and dy < 150 then
         Helga.ressurgindo = true
-        local anim = Helga.animacoes["death"]
+        local anim = Helga.animacoes["ressureicao"]
         Helga.frame_atual = #anim.quads  -- começa do último frame
         Helga.tempo_animacao = 0
       end
     end
 
     if Helga.ressurgindo then
-      local anim = Helga.animacoes["death"]
+      local anim = Helga.animacoes["ressureicao"]
       Helga.tempo_animacao = Helga.tempo_animacao + dt
       if Helga.tempo_animacao >= Helga.frame_delay then
         Helga.tempo_animacao = 0
-        Helga.frame_atual = Helga.frame_atual - 1  -- ← ao contrário
+        Helga.frame_atual = Helga.frame_atual - 1  -- ao contrário
+        -- DEPOIS:
         if Helga.frame_atual < 1 then
-          Helga.ressurgindo = false  -- terminou, some
-          Helga.vivo = false         -- continua morta, só some do draw
-          Helga.frame_atual = 0      -- flag para parar de desenhar
+          Helga.ressurgindo    = false
+          Helga.vivo           = true
+          Helga.estado         = "idle"
+          Helga.animacao_atual = "idle_purified"
+          Helga.frame_atual    = 1
+          Helga.tempo_animacao = 0
+          Helga.renascida      = true
+          Helga.pode_atacar    = false
+          Helga.cooldown_ataque = math.huge
+          Helga.dist_ataque    = 0
+          Helga.velocidade     = 0
         end
       end
     else
@@ -162,6 +182,43 @@ function Helga.update(dt, player)
       Helga.tempo_dano = 0
     end
   end
+  
+  -- 9. PROJÉTEIS
+  for _, p in ipairs(Helga.projeteis) do
+    if p.vivo then
+      if not Helga.vivo then
+        p.vivo = false  
+      else
+        p.x = p.x + p.vx * dt
+        p.y = p.y + p.vy * dt
+
+        p.tempo = p.tempo + dt
+        if p.tempo >= 0.1 then
+          p.tempo = 0
+          p.frame = p.frame + 1
+          if p.frame > #Helga.projetil.quads then p.frame = 1 end
+        end
+
+        local caixa_projetil = {
+          x       = p.x - 12,
+          y       = p.y - 12 + 20,
+          largura = 24,
+          altura  = 24
+        }
+
+        if colide(caixa_projetil, player) then
+          p.vivo = false
+          Helga.som_impacto:stop() 
+          Helga.som_impacto:play()  
+          player.tomarDano(Helga.direcao, 20)
+        end
+
+        if p.x < 0 or p.x > Mapa.largura then
+        p.vivo = false
+        end
+      end
+    end
+  end
 
   -- 4. RECEBER DANO
   local hitbox = player.getHitboxAtaque and player.getHitboxAtaque()
@@ -172,7 +229,7 @@ function Helga.update(dt, player)
     altura  = 120
   }
 
-  if hitbox and colide(helga_corpo, hitbox) and Helga.pode_tomar_dano then
+  if hitbox and colide(helga_corpo, hitbox) and Helga.pode_tomar_dano and not Helga.renascida then
     Helga.vida = Helga.vida - 10
     Helga.pode_tomar_dano = false
 
@@ -190,10 +247,8 @@ function Helga.update(dt, player)
         Helga.frame_atual = 1
         Helga.tempo_animacao = 0
       else
-        -- tomou dano durante o ataque: não interrompe a animação,
-        -- mas garante que o tiro ainda vai sair se ainda não saiu
         if Helga.frame_atual > Helga.frame_tiro then
-          Helga.atirou = true  -- frame do tiro já passou, não vai sair mesmo
+          Helga.atirou = true  
         end
       end
       Helga.x = Helga.x + (player.direcao * 60)
@@ -205,29 +260,26 @@ function Helga.update(dt, player)
   local dist_x = math.abs(dx)
   Helga.direcao = (dx > 0) and 1 or -1
 
-  if Helga.estado ~= "hit" and Helga.estado ~= "death" and Helga.estado ~= "attack" then
+  if Helga.estado ~= "hit" and Helga.estado ~= "death" and Helga.estado ~= "attack" and not Helga.renascida then
 
     if dist_x >= Helga.dist_ataque then
-      -- longe: persegue
       Helga.estado = "run"
       Helga.x = Helga.x + Helga.direcao * Helga.velocidade * dt
 
     elseif Helga.pode_atacar then
-      -- dentro do range e pode atacar: ataca (sem checar dist_y, ela atira horizontal)
       Helga.estado = "attack"
       Helga.frame_atual = 1
       Helga.tempo_animacao = 0
       Helga.atirou = false
 
     else
-      -- dentro do range mas cooldown ativo: espera
       Helga.estado = "idle"
     end
   end
 
   -- 6. SINCRONIZA ANIMAÇÃO
   if Helga.estado == "idle" then
-    Helga.setAnim("idle")
+    Helga.setAnim(Helga.renascida and "idle_purified" or "idle")
   elseif Helga.estado == "run" then
     Helga.setAnim("walk")
   elseif Helga.estado == "attack" then
@@ -271,57 +323,16 @@ function Helga.update(dt, player)
       Helga.pode_atacar = false
       Helga.tempo_ataque = 0
     end
-    --if Helga.frame_atual == 1 then
-      --Helga.atirou = false
-    --end
   end
 
-  -- 9. PROJÉTEIS
-  for _, p in ipairs(Helga.projeteis) do
-    if p.vivo then
-      p.x = p.x + p.vx * dt
-      p.y = p.y + p.vy * dt
-
-      p.tempo = p.tempo + dt
-      if p.tempo >= 0.1 then
-        p.tempo = 0
-        p.frame = p.frame + 1
-        if p.frame > #Helga.projetil.quads then p.frame = 1 end
-      end
-
-      local caixa_projetil = {
-        x       = p.x - 12,
-        y       = p.y - 12 + 20,
-        largura = 24,
-        altura  = 24
-      }
-
-      if colide(caixa_projetil, player) then
-        p.vivo = false
-        Helga.som_impacto:stop() 
-        Helga.som_impacto:play()  
-        player.tomarDano(Helga.direcao, 20)
-      end
-      
-      local hitbox_player = player.getHitboxAtaque and player.getHitboxAtaque()
-      if hitbox_player and colide(caixa_projetil, hitbox_player) then
-        p.vivo = false
-      end
-
-      if p.x < 0 or p.x > love.graphics.getWidth() then
-        p.vivo = false
-      end
-    end
-  end
 end
 
 function Helga.draw()
   if not Helga.vivo and Helga.frame_atual == 0 then return end
   if not Helga.vivo and Helga.animacao_atual ~= "death" and not Helga.ressurgindo then return end
 
-  local anim = Helga.animacoes[Helga.ressurgindo and "death" or Helga.animacao_atual]
+  local anim = Helga.animacoes[Helga.ressurgindo and "ressureicao" or Helga.animacao_atual]
   
-  -- verde durante a ressurreição
   if Helga.ressurgindo then
     love.graphics.setColor(0.2, 1, 0.3)
   else
@@ -341,11 +352,6 @@ function Helga.draw()
     anim.h / 2
   )
 
-  -- debug: remova quando não precisar mais
-  love.graphics.setColor(1, 0, 0, 0.4)
-  love.graphics.rectangle("fill", Helga.x - 40, Helga.y + 80, 100, 120)
-  love.graphics.setColor(1, 1, 1)
-
   for _, p in ipairs(Helga.projeteis) do
     if p.vivo then
       local p_direcao = p.vx > 0 and 1 or -1
@@ -360,16 +366,6 @@ function Helga.draw()
         Helga.projetil.w / 2,
         Helga.projetil.h / 2
       )
-      
-      -- debug hitbox do projétil
-      love.graphics.setColor(0, 1, 1, 0.5)
-      love.graphics.rectangle("fill",
-      p.x - 12,
-      p.y - 12 + 20,
-      24,
-      24
-      )
-      --love.graphics.setColor(1, 1, 1)
     end
   end
 end

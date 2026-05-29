@@ -16,16 +16,14 @@ local salas = {}
 salas["entrada_floresta"] = function(s)
   return {
     fundo = "assets/background/Entrada_da_Floresta.png",
-
+    itens = {
+    { x = 255 * s, y = 25 * s, coletado = false }  -- em cima da plataforma 1
+    },
     plataformas = {
       -- primeiro chao esquerda
       { x = 0    * s, y = 475 * s, largura = 585 * s, altura = 250 },
       -- segundo chão esquerda
       { x = 688  * s, y = 475 * s, largura = 245 * s, altura = 250 },
-      -- item
-      itens = {
-        { x = 220, y = 60, coletado = false }  -- em cima da plataforma 1
-      },
       -- Chão Meio
       { x = 1100 * s, y = 525 * s, largura = 315 * s, altura = 200 },
       -- Primeiro chão direita
@@ -234,11 +232,6 @@ salas["sala_magnus"] = function(s)
   }
 end
 
-
--- ============================================================
---  FUNÇÕES PÚBLICAS
--- ============================================================
-
 function Mapa.load()
   Mapa.carregar("entrada_floresta")
 end
@@ -251,6 +244,7 @@ function Mapa.carregar(nome_sala)
   )
  
   local s = love.graphics.getHeight() / img_temp:getHeight()
+  Mapa.escala = s
  
   local dados = salas[nome_sala](s)
 
@@ -260,6 +254,8 @@ function Mapa.carregar(nome_sala)
   Mapa.plataformas   = dados.plataformas
   Mapa.portais_lista = dados.portais(Mapa.largura)
   Mapa.nome_atual    = nome_sala
+  Mapa.itens = dados.itens or {}
+  Mapa.item_img = love.graphics.newImage("assets/items/heart.png")
 end
  
 function Mapa.checarPortais(player)
@@ -300,7 +296,6 @@ function Mapa.entrarPortal(player, portal)
   player.y_velocidade = 0
 end
  
--- Dica visual (chame fora da câmera em main.lua)
 function Mapa.drawHUD()
   if not Mapa.portal_proximo then return end
  

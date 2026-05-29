@@ -70,7 +70,6 @@ local function novo_magnus(x, y)
     tempo_dano = 0,
     cooldown_dano = 0.5,
 
-    -- combo: conta quantas vezes atacou no ciclo atual
     combo_count = 0,
     combo_fila = {},
 
@@ -108,13 +107,12 @@ local function novo_magnus(x, y)
     no_chao      = false,
     som1_tocou = false,
 
-    -- garante que Magnus ataca mesmo sob spam de golpes
     tempo_em_range  = 0,
-    gatilho_forcado = 0.8,   -- segundos em range antes de forçar ataque
+    gatilho_forcado = 0.8,   
   }
 end
 
-local posicao_spawn = { x = 450, y = 300 }
+local posicao_spawn = { x = 1250, y = 300 }
 
 function Magnus.load()
   Magnus.som_ataque = love.audio.newSource("assets/audio/magnus/Sword_Attack1.mp3", "static")
@@ -124,7 +122,6 @@ end
 
 local function iniciar_ataque(m, player)
   
-  -- empurra o Magnus para fora do player antes de atacar
   local dx = m.x - player.x
   local distancia_ideal = m.dist_ataque * 0.8
   if math.abs(dx) < distancia_ideal then
@@ -151,7 +148,6 @@ local function iniciar_ataque(m, player)
 end
 
 local function update_magnus(m, dt, player, plataformas)
-  -- cooldown de dano recebido
   if not m.pode_tomar_dano then
     m.tempo_dano = m.tempo_dano + dt
     if m.tempo_dano >= m.cooldown_dano then
@@ -160,7 +156,6 @@ local function update_magnus(m, dt, player, plataformas)
     end
   end
 
-  -- cooldown de ataque
   if not m.pode_atacar then
     m.tempo_ataque = m.tempo_ataque + dt
     if m.tempo_ataque >= m.cooldown_ataque then
@@ -169,7 +164,6 @@ local function update_magnus(m, dt, player, plataformas)
     end
   end
 
-  -- receber dano do player
   local hitbox_player = player.getHitboxAtaque and player.getHitboxAtaque()
   if hitbox_player and colide(m, hitbox_player) and m.pode_tomar_dano and m.vivo then
     m.vida = m.vida - 10
@@ -182,7 +176,6 @@ local function update_magnus(m, dt, player, plataformas)
       m.vivo = false
       m.combo_fila = {}
     else
-      -- só interrompe com hit se NÃO estiver atacando e NÃO estiver em range iminente
       local dx_hit = math.abs(player.x - m.x)
       local prestes_a_atacar = dx_hit < m.dist_ataque and m.tempo_em_range > 0
       if not atacando(m) and not prestes_a_atacar then

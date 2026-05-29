@@ -387,12 +387,6 @@ function Player.update(dt, plataformas)
 end
 
 function Player.draw()
-  local hb = Player.getHitboxAtaque()
-  if hb then
-    love.graphics.setColor(1, 1, 0, 0.5)
-    love.graphics.rectangle("fill", hb.x, hb.y, hb.largura, hb.altura)
-    love.graphics.setColor(1, 1, 1)
-  end
   love.graphics.setColor(1, 1, 1)
 
   local info = {

@@ -13,13 +13,6 @@ end
 function Camera.set()
   love.graphics.push()
   love.graphics.translate(-Camera.x, -Camera.y)
-  for _, item in ipairs(Mapa.itens) do
-    if not item.coletado then
-      love.graphics.setColor(0.5, 1, 0.2)
-      love.graphics.rectangle("fill", item.x, item.y, 20, 20)
-      love.graphics.setColor(1, 1, 1)
-    end
-  end
 end
 
 function Camera.unset()
