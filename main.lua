@@ -4,8 +4,28 @@ require "src/camera"
 require "src/enemy"
 require "src/helga"
 require "src/magnus"
+require "src/hud"
+
+LARGURA_JOGO  = 800
+ALTURA_JOGO   = 600
+local canvas_jogo   = nil
+local escala_render = 1
+local offset_x      = 0
+local offset_y      = 0
+
+local function atualizar_escala()
+  local sw = love.graphics.getWidth()
+  local sh = love.graphics.getHeight()
+  escala_render = math.min(sw / LARGURA_JOGO, sh / ALTURA_JOGO)
+  offset_x = math.floor((sw - LARGURA_JOGO * escala_render) / 2)
+  offset_y = math.floor((sh - ALTURA_JOGO  * escala_render) / 2)
+end
 
 function love.keypressed(key)
+  if key == "f11" then
+    love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
+    atualizar_escala()
+  end
   Player.keypressed(key)
   if key == "x" or key == "k" then
     Mapa.interagir(Player)
@@ -19,23 +39,28 @@ function love.gamepadpressed(joystick, button)
   end
 end
 
+tempo_morte = 0
+
 function love.load()
+  love.window.setMode(LARGURA_JOGO, ALTURA_JOGO, { resizable = false })
+  canvas_jogo = love.graphics.newCanvas(LARGURA_JOGO, ALTURA_JOGO)
+  atualizar_escala()
+
   Mapa.load()
   Player.load()
   Enemy.load()
   Helga.load()
   Magnus.load()
+  HUD.load()
 
   fundo = love.graphics.newImage("assets/background/Entrada_da_Floresta.png")
-  escala_fundo = love.graphics.getHeight() / fundo:getHeight()
+  escala_fundo = ALTURA_JOGO / fundo:getHeight()
 end
-
-tempo_morte = 0
 
 function love.update(dt)
   Player.update(dt, Mapa.plataformas)
-  
-  if Player.vivo and Player.y > love.graphics.getHeight() + 100 then
+
+  if Player.vivo and Player.y > ALTURA_JOGO + 100 then
     Player.tomarDano(0, 999)
   end
 
@@ -53,7 +78,6 @@ function love.update(dt)
 
   if Mapa.nome_atual ~= sala_anterior then
     Enemy.load()
-    -- só reseta Helga se ela ainda não foi morta/renascida
     if not Helga.renascida and Helga.vivo then
       Helga.load()
     end
@@ -63,6 +87,7 @@ function love.update(dt)
   end
 
   Camera.update(Player.x, Player.y)
+  HUD.update()
 
   if Mapa.nome_atual == "entrada_floresta" then
     Enemy.update(dt, Player, Mapa.plataformas)
@@ -83,6 +108,8 @@ function love.update(dt)
 end
 
 function love.draw()
+  -- ── Renderiza o jogo no canvas 800x600 ───────────────────
+  love.graphics.setCanvas(canvas_jogo)
   love.graphics.clear(0.1, 0.1, 0.2)
   love.graphics.setColor(1, 1, 1)
 
@@ -90,7 +117,7 @@ function love.draw()
 
   Camera.set()
   Mapa.draw()
-    
+
   for _, item in ipairs(Mapa.itens) do
     if not item.coletado then
       local escala_item = 64 / Mapa.item_img:getWidth()
@@ -105,8 +132,8 @@ function love.draw()
       )
     end
   end
-  
-Player.draw()
+
+  Player.draw()
 
   if Mapa.nome_atual == "entrada_floresta" then
     Enemy.draw()
@@ -117,10 +144,12 @@ Player.draw()
   end
   Camera.unset()
 
-  love.graphics.setColor(1, 1, 1)
-  love.graphics.print("HP: " .. Player.vida, 10, 30)
-
-  -- HUD fora da câmera
   Mapa.drawHUD()
-  
+  HUD.draw()
+
+  -- ── Joga o canvas na tela com letterboxing ───────────────
+  love.graphics.setCanvas()
+  love.graphics.clear(0, 0, 0)  -- preto nas bordas
+  love.graphics.setColor(1, 1, 1)
+  love.graphics.draw(canvas_jogo, offset_x, offset_y, 0, escala_render, escala_render)
 end

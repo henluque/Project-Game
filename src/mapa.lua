@@ -243,7 +243,7 @@ function Mapa.carregar(nome_sala)
     "assets/background/Entrada_da_Floresta.png"
   )
  
-  local s = love.graphics.getHeight() / img_temp:getHeight()
+  local s = ALTURA_JOGO / img_temp:getHeight()
   Mapa.escala = s
  
   local dados = salas[nome_sala](s)

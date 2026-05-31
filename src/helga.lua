@@ -94,7 +94,7 @@ function Helga.load()
   Helga.animacoes.attack = carregarAnim("Attack",  13)
   Helga.animacoes.hit    = carregarAnim("Get_hit",  3)
   Helga.animacoes.death  = carregarAnim("Death",   18)
-  Helga.animacoes.ressureicao = carregarAnim_Resurrected("Death", 18)
+  Helga.animacoes.ressureicao = carregarAnim_Resurrected("Reborn", 18)
   Helga.animacoes.idle_purified = carregarAnim_Resurrected("Idle", 10)
   
 
