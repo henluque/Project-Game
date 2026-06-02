@@ -1,6 +1,20 @@
 Mapa = {}
 
 -- ============================================================
+-- Música:
+
+local musica_atual = nil
+local trilha_atual_nome = nil
+
+local trilhas = {
+  entrada_floresta = "assets/audio/musica/Slay_The_Evil.mp3",
+  coracao_floresta = "assets/audio/musica/Slay_The_Evil.mp3",
+  saida_floresta = "assets/audio/musica/Slay_The_Evil.mp3",
+  entrada_castelo = "assets/audio/musica/Slay_The_Evil.mp3",
+  sala_magnus = "assets/audio/musica/Infinite_Darkness.mp3",
+}
+
+-- ============================================================
 --  Portal:
 --    x, y, largura, altura  →  área invisível que ativa a troca
 --    proxima_sala           →  nome da sala que será carregada
@@ -232,6 +246,10 @@ salas["sala_magnus"] = function(s)
   }
 end
 
+-- ============================================================
+--  Funções Públicas
+-- ============================================================
+
 function Mapa.load()
   Mapa.carregar("entrada_floresta")
 end
@@ -256,6 +274,21 @@ function Mapa.carregar(nome_sala)
   Mapa.nome_atual    = nome_sala
   Mapa.itens = dados.itens or {}
   Mapa.item_img = love.graphics.newImage("assets/items/heart.png")
+  
+  -- ------------------------------------------------------------
+  --  Troca de Trílha Sonora
+  -- ------------------------------------------------------------
+  
+  local caminho = trilhas[nome_sala]
+  if caminho and caminho ~= trilha_atual_nome then
+    if musica_atual then
+      musica_atual:stop()
+    end
+    musica_atual = love.audio.newSource(caminho, "stream")
+    musica_atual:setLooping(true)
+    musica_atual:play()
+    trilha_atual_nome = caminho
+  end
 end
  
 function Mapa.checarPortais(player)
