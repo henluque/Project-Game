@@ -45,7 +45,7 @@ local function colide(a, b)
 end
 
 function Helga.load()
-  Helga.vida = 50
+  Helga.vida = 100
   Helga.x = 600
   Helga.y = 300
   Helga.largura = 64

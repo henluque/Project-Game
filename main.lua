@@ -21,6 +21,31 @@ local function atualizar_escala()
   offset_y = math.floor((sh - ALTURA_JOGO  * escala_render) / 2)
 end
 
+-- ── Reinicia APENAS o estado do jogo, sem tocar na janela/canvas ──
+local function reiniciar()
+  Mapa.load()
+  Player.load()
+  Enemy.load()
+  Helga.load()
+  Magnus.load()
+  HUD.load()
+end
+
+tempo_morte = 0
+
+-- ── Chamado UMA VEZ pelo LÖVE na inicialização ────────────────────
+function love.load()
+  love.window.setMode(LARGURA_JOGO, ALTURA_JOGO, { resizable = false })
+  canvas_jogo = love.graphics.newCanvas(LARGURA_JOGO, ALTURA_JOGO)
+  atualizar_escala()
+  reiniciar()
+end
+
+-- ── Atualiza letterboxing quando a janela muda (ex: alt+enter, resize) ──
+function love.resize(w, h)
+  atualizar_escala()
+end
+
 function love.keypressed(key)
   if key == "f11" then
     love.window.setFullscreen(not love.window.getFullscreen(), "desktop")
@@ -39,25 +64,11 @@ function love.gamepadpressed(joystick, button)
   end
 end
 
-tempo_morte = 0
-
-function love.load()
-  love.window.setMode(LARGURA_JOGO, ALTURA_JOGO, { resizable = false })
-  canvas_jogo = love.graphics.newCanvas(LARGURA_JOGO, ALTURA_JOGO)
-  atualizar_escala()
-
-  Mapa.load()
-  Player.load()
-  Enemy.load()
-  Helga.load()
-  Magnus.load()
-  HUD.load()
-
-  fundo = love.graphics.newImage("assets/background/Entrada_da_Floresta.png")
-  escala_fundo = ALTURA_JOGO / fundo:getHeight()
-end
-
 function love.update(dt)
+  -- Trava dt máximo: evita que entidades atravessem plataformas
+  -- quando há spike de frame (ex: primeiro frame após carregar assets)
+  dt = math.min(dt, 0.05)
+
   Player.update(dt, Mapa.plataformas)
 
   if Player.vivo and Player.y > ALTURA_JOGO + 100 then
@@ -68,7 +79,7 @@ function love.update(dt)
     tempo_morte = tempo_morte + dt
     if tempo_morte >= 1.5 then
       tempo_morte = 0
-      love.load()
+      reiniciar()  -- NÃO chama love.load() → janela e fullscreen preservados
     end
     return
   end
@@ -108,12 +119,10 @@ function love.update(dt)
 end
 
 function love.draw()
-  -- ── Renderiza o jogo no canvas 800x600 ───────────────────
+  -- ── Renderiza o jogo no canvas 800x600 ───────────────────────────
   love.graphics.setCanvas(canvas_jogo)
   love.graphics.clear(0.1, 0.1, 0.2)
   love.graphics.setColor(1, 1, 1)
-
-  love.graphics.draw(fundo, 0, 0, 0, escala_fundo, escala_fundo)
 
   Camera.set()
   Mapa.draw()
@@ -147,9 +156,9 @@ function love.draw()
   Mapa.drawHUD()
   HUD.draw()
 
-  -- ── Joga o canvas na tela com letterboxing ───────────────
+  -- ── Joga o canvas na tela com letterboxing ────────────────────────
   love.graphics.setCanvas()
-  love.graphics.clear(0, 0, 0)  -- preto nas bordas
+  love.graphics.clear(0, 0, 0)
   love.graphics.setColor(1, 1, 1)
   love.graphics.draw(canvas_jogo, offset_x, offset_y, 0, escala_render, escala_render)
 end
