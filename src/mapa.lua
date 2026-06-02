@@ -271,7 +271,9 @@ function Mapa.checarPortais(player)
     local na_area  = dentro_y and (toca_dir or toca_esq)
  
     if na_area then
-      if portal.requer_interacao then
+      if portal.proxima_sala == "saida_floresta" and not Helga.renascida then
+        -- portal bloqueado
+      elseif portal.requer_interacao then
         Mapa.portal_proximo = portal
       else
         Mapa.entrarPortal(player, portal)
@@ -297,25 +299,43 @@ function Mapa.entrarPortal(player, portal)
 end
  
 function Mapa.drawHUD()
-  if not Mapa.portal_proximo then return end
+  
+  if (Mapa.nome_atual == "coracao_floresta" or Mapa.nome_atual == "entrada_floresta") and not Helga.vivo and not Helga.renascida then
+    local texto = "Use o Coracao da Floresta para purificar Helga antes de avancar"
+    local fonte  = love.graphics.getFont()
+    local tw     = fonte:getWidth(texto)
+    local sw     = love.graphics.getWidth()
+    local px     = (sw - tw) / 2
+    local py     = love.graphics.getHeight() - 110
+
+    love.graphics.setColor(0, 0, 0, 0.60)
+    love.graphics.rectangle("fill", px - 12, py - 6, tw + 24, 32, 6, 6)
+
+    local pulso = 0.75 + math.sin(love.timer.getTime() * 4) * 0.25
+    love.graphics.setColor(1, 0.4, 0.4, pulso)
+    love.graphics.print(texto, px, py)
+    love.graphics.setColor(1, 1, 1)
+  end
+  
+  --if not Mapa.portal_proximo then return end
  
-  local texto  = "[X] Entrar"
-  local fonte  = love.graphics.getFont()
-  local tw     = fonte:getWidth(texto)
-  local sw     = love.graphics.getWidth()
-  local px     = (sw - tw) / 2
-  local py     = love.graphics.getHeight() - 60
+  --local texto  = "[X] Entrar"
+  --local fonte  = love.graphics.getFont()
+  --local tw     = fonte:getWidth(texto)
+  --local sw     = love.graphics.getWidth()
+  --local px     = (sw - tw) / 2
+  --local py     = love.graphics.getHeight() - 60
  
   -- fundo semi-transparente
-  love.graphics.setColor(0, 0, 0, 0.55)
-  love.graphics.rectangle("fill", px - 12, py - 6, tw + 24, 32, 6, 6)
+  --love.graphics.setColor(0, 0, 0, 0.55)
+  --love.graphics.rectangle("fill", px - 12, py - 6, tw + 24, 32, 6, 6)
  
   -- texto pulsante
-  local pulso = 0.75 + math.sin(love.timer.getTime() * 4) * 0.25
-  love.graphics.setColor(1, 0.9, 0.3, pulso)
-  love.graphics.print(texto, px, py)
+  --local pulso = 0.75 + math.sin(love.timer.getTime() * 4) * 0.25
+  --love.graphics.setColor(1, 0.9, 0.3, pulso)
+  --love.graphics.print(texto, px, py)
  
-  love.graphics.setColor(1, 1, 1)
+  --love.graphics.setColor(1, 1, 1)
 end
  
 function Mapa.draw()

@@ -45,7 +45,7 @@ local function colide(a, b)
 end
 
 function Helga.load()
-  Helga.vida = 50
+  Helga.vida = 100
   Helga.x = 600
   Helga.y = 300
   Helga.largura = 64
@@ -252,8 +252,10 @@ function Helga.update(dt, player)
         end
       end
       Helga.x = Helga.x + (player.direcao * 60)
+      Helga.x = math.max(Helga.largura, math.min(Mapa.largura - Helga.largura, Helga.x))
     end
   end
+
 
   -- 5. LÓGICA DE IA
   local dx = player.x - Helga.x
@@ -312,6 +314,8 @@ function Helga.update(dt, player)
       end
     end
   end
+
+  
 
   -- 8. DISPARO
   if Helga.estado == "attack" then
