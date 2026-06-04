@@ -86,14 +86,22 @@ local function goblin(x, y)
   }
 end
 
-local posicoes_spawn = {
-  { x = 450,  y = 362 },
-  { x = 800,  y = 362 },
-  { x = 630,  y = 170 },
-  { x = 970,  y = 280 },
-  { x = 1400, y = 314 },
-  { x = 1800, y = 170 }
+local posicoes_por_sala = {
+  entrada_floresta = {
+    { x = 450,  y = 362 },
+    { x = 800,  y = 362 },
+    { x = 630,  y = 170 },
+    { x = 970,  y = 280 },
+    { x = 1400, y = 314 },
+    { x = 1800, y = 170 },
+  },
+  saida_floresta = {
+    { x = 550,  y = 620 },
+    { x = 900,  y = 640 },
+    { x = 1350, y = 640 },
+  },
 }
+
 local function getHitboxAtaque(g)
   local largura = 80
   local altura  = g.altura + 20
@@ -108,8 +116,11 @@ end
 function Enemy.load()
   carrega_sprites()
   Enemy.lista = {}
+
   local s = Mapa.escala or 1
-  for _, pos in ipairs(posicoes_spawn) do
+  local posicoes = posicoes_por_sala[Mapa.nome_atual] or {}
+
+  for _, pos in ipairs(posicoes) do
     local g = goblin(pos.x * s, pos.y * s)
     g.no_chao = true
     g.y_velocidade = 0

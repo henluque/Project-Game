@@ -49,19 +49,19 @@ function Player.getHitboxAtaque()
   if Player.combo_passo == 0 then return nil end
 
   local largura = 120
-  local altura = Player.altura  -- 64px, altura lógica correta
+  local altura = Player.altura  
 
   if Player.direcao == 1 then
     return {
       x = Player.x + Player.largura,
-      y = Player.y,          -- de volta ao original
+      y = Player.y,          
       largura = largura,
       altura = altura
     }
   else
     return {
       x = Player.x - largura,
-      y = Player.y,          -- de volta ao original
+      y = Player.y,          
       largura = largura,
       altura = altura
     }
@@ -75,6 +75,7 @@ function Player.load()
   Player.y = 200
   Player.velocidade_mov = 250
   Player.tem_item = false;
+  Player.tem_chave = false
   
   Player.y_velocidade = 0
   Player.gravidade = 1200
@@ -167,16 +168,10 @@ function Player.keypressed(key)
       Player.frame_atual = 1
       Player.tempo_animacao = 0
       Player.estado = "ataque1"
-      --Player.som_ataque1:stop()  -- stop antes de play evita sobreposição
-      --Player.som_ataque1:play()
     elseif Player.combo_passo == 1 and Player.combo_fila == 0 then
       Player.combo_fila = 2
-      --Player.som_ataque2:stop()
-      --Player.som_ataque2:play()
     elseif Player.combo_passo == 2 and Player.combo_fila == 0 then
       Player.combo_fila = 3
-      --Player.som_ataque3:stop()
-      --Player.som_ataque3:play()
     end
   end
 end
@@ -260,7 +255,7 @@ function Player.update(dt, plataformas)
     Player.x = 0
   end
 
-  -- ── Pulo (simples ou duplo) ─────────────────────────────────
+  -- Pulo (simples ou duplo)
   if Player.pulo_pressionado and not travado then
     if Player.pulos_restantes > 0 then
       Player.y_velocidade    = Player.forca_pulo

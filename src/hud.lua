@@ -9,7 +9,8 @@ local nomes_salas = {
 }
 
 function HUD.load()
-  HUD.avatar = love.graphics.newImage("assets/sprites/player/Avatar.png")
+  HUD.avatar    = love.graphics.newImage("assets/sprites/player/Avatar.png")
+  HUD.chave_img = love.graphics.newImage("assets/items/key.png")
 end
 
 function HUD.update()
@@ -122,20 +123,35 @@ function HUD.draw()
     love.graphics.rectangle("line", sx, slots_y, slot_size, slot_size, 4, 4)
 
     -- slot 1: imagem real do item
-    if i == 1 and Player.tem_item and not Helga.renascida then
-      local img = Mapa.item_img
-      local escala_slot = (slot_size - 8) / math.max(img:getWidth(), img:getHeight())
-      local iw = img:getWidth()  * escala_slot
-      local ih = img:getHeight() * escala_slot
-      love.graphics.setColor(1, 1, 1)
-      love.graphics.draw(
-        img,
-        sx + (slot_size - iw) / 2,
-        slots_y + (slot_size - ih) / 2,
-        0,
-        escala_slot,
-        escala_slot
-      )
+    -- slot 1: chave (quando tiver) ou coracao da floresta
+    if i == 1 then
+      local img = nil
+      if Player.tem_chave then
+        img = HUD.chave_img
+      elseif Player.tem_item and not Helga.renascida then
+        img = Mapa.item_img
+      end
+
+      if img then
+        local escala_slot = (slot_size - 8) / math.max(img:getWidth(), img:getHeight())
+        local iw = img:getWidth()  * escala_slot
+        local ih = img:getHeight() * escala_slot
+        if Player.tem_chave then
+          local pulso = 0.75 + math.sin(love.timer.getTime() * 4) * 0.25
+          love.graphics.setColor(1, 1, 0.4, pulso)
+        else
+          love.graphics.setColor(1, 1, 1)
+        end
+        love.graphics.draw(
+          img,
+          sx + (slot_size - iw) / 2,
+          slots_y + (slot_size - ih) / 2,
+          0,
+          escala_slot,
+          escala_slot
+        )
+        love.graphics.setColor(1, 1, 1)
+      end
     end
   end
 

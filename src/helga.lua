@@ -59,7 +59,7 @@ function Helga.load()
   Helga.renascida = false
   Helga.frame_ressureicao = 0  -- conta de trás pra frente
 
-  Helga.cooldown_ataque = 2
+  Helga.cooldown_ataque = 1.5
   Helga.tempo_ataque = 0
   Helga.pode_atacar = true
 
@@ -355,6 +355,18 @@ function Helga.draw()
     anim.w / 2,
     anim.h / 2
   )
+  
+  if Helga.vivo and not Helga.renascida then
+    local barra_largura = 160
+    local barra_x = Helga.x - barra_largura / 2
+    local barra_y = Helga.y + 40
+    local pct = math.max(0, Helga.vida / 100)
+    love.graphics.setColor(0.2, 0.2, 0.2)
+    love.graphics.rectangle("fill", barra_x, barra_y, barra_largura, 8)
+    love.graphics.setColor(0.8, 0.1, 0.1)
+    love.graphics.rectangle("fill", barra_x, barra_y, barra_largura * pct, 8)
+    love.graphics.setColor(1, 1, 1)
+  end
 
   for _, p in ipairs(Helga.projeteis) do
     if p.vivo then

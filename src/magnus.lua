@@ -62,7 +62,7 @@ local function novo_magnus(x, y)
     altura  = 64,
 
     vida = 150,
-    velocidade = 100,
+    velocidade = 135,
     raio_visao = 350,
     dist_ataque = 80,
 

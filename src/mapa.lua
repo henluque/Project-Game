@@ -219,6 +219,7 @@ salas["entrada_castelo"] = function(s)
           largura           = 50,
           altura            = 1000 * s,
           proxima_sala      = "sala_magnus",
+          requer_chave = true,
           entrada_x         = 120 * s,
           entrada_y         = 600 * s,
           entrada_lado      = "esquerda",
@@ -274,6 +275,7 @@ function Mapa.carregar(nome_sala)
   Mapa.nome_atual    = nome_sala
   Mapa.itens = dados.itens or {}
   Mapa.item_img = love.graphics.newImage("assets/items/heart.png")
+  Mapa.som_item = love.audio.newSource("assets/audio/item/Item Collected.mp3", "static")
   
   -- ------------------------------------------------------------
   --  Troca de Trílha Sonora
@@ -286,6 +288,7 @@ function Mapa.carregar(nome_sala)
     end
     musica_atual = love.audio.newSource(caminho, "stream")
     musica_atual:setLooping(true)
+    musica_atual:setVolume(0.2)
     musica_atual:play()
     trilha_atual_nome = caminho
   end
@@ -304,8 +307,10 @@ function Mapa.checarPortais(player)
     local na_area  = dentro_y and (toca_dir or toca_esq)
  
     if na_area then
-      if portal.proxima_sala == "saida_floresta" and not Helga.renascida then
-        -- portal bloqueado
+      if portal.requer_chave and not Player.tem_chave then
+      -- portal bloqueado (mimic ainda não foi derrotado)
+      elseif portal.proxima_sala == "saida_floresta" and not Helga.renascida then
+        -- portal bloqueado (Helga ainda não foi purificada)
       elseif portal.requer_interacao then
         Mapa.portal_proximo = portal
       else
@@ -325,6 +330,9 @@ function Mapa.interagir(player)
 end
  
 function Mapa.entrarPortal(player, portal)
+  if portal.requer_chave and player.tem_chave then
+    player.tem_chave = false
+  end
   Mapa.carregar(portal.proxima_sala)
   player.x = portal.entrada_x
   player.y = portal.entrada_y or 0
@@ -337,9 +345,9 @@ function Mapa.drawHUD()
     local texto = "Use o Coracao da Floresta para purificar Helga antes de avancar"
     local fonte  = love.graphics.getFont()
     local tw     = fonte:getWidth(texto)
-    local sw     = love.graphics.getWidth()
+    local sw     = LARGURA_JOGO
     local px     = (sw - tw) / 2
-    local py     = love.graphics.getHeight() - 110
+    local py     = ALTURA_JOGO - 110
 
     love.graphics.setColor(0, 0, 0, 0.60)
     love.graphics.rectangle("fill", px - 12, py - 6, tw + 24, 32, 6, 6)
